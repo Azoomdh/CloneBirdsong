@@ -8,11 +8,13 @@ from scipy.io import wavfile;
 import pandas as pd;
 
 class ConfigAudio :
-    def __init__(self, chieuRongPlot, chieuCaoPlot, hop_length, frame_length) :
+    def __init__(self, chieuRongPlot, chieuCaoPlot, hop_length, frame_length, n_mfcc, n_chroma) :
         self.chieuRongPlot = chieuRongPlot
         self.chieuCaoPlot = chieuCaoPlot
         self.hop_length = hop_length
         self.frame_length = frame_length
+        self.n_mfcc= n_mfcc
+        self.n_chroma= n_chroma
     #
 #
 
@@ -25,18 +27,25 @@ class AudioInfo :
             chieuRongPlot= 14, 
             chieuCaoPlot= 5, 
             hop_length=512, 
-            frame_length= 2048 
-        );
+            frame_length= 2048,
+            n_mfcc= 13,
+            n_chroma= 12
+        )
         
         self.zcrMean= None; 
         self.setZcr();
         
-        self.tamPhoMean = None; 
-        self.setTamPho();
+        self.specCentMean = None; 
+        self.setSpecCent();
     
         self.specRolloffMean = None;
         self.setSpecRolloff();
     
+        self.listMfccMean = []
+        self.setListMfcc()
+
+        self.listChromaMean = []
+        self.setListChroma()
     #
 
     def createNullPlot(self):
@@ -135,7 +144,7 @@ class AudioInfo :
 
     #🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥
 
-    def getTamPhoAllTime(self):
+    def getSpecCentAllTime(self):
         return librosa.feature.spectral_centroid(
             y= self.y,
             sr= self.sr,
@@ -143,33 +152,33 @@ class AudioInfo :
         );
     #
 
-    def setTamPho(self):
-        tamPhoAllTime= self.getTamPhoAllTime();
-        self.tamPhoMean = np.mean(tamPhoAllTime);
+    def setSpecCent(self):
+        specCentAllTime= self.getSpecCentAllTime();
+        self.specCentMean = np.mean(specCentAllTime);
     #
 
-    def getTamPhoPlot(self):
-        tamPhoAllTime= self.getTamPhoAllTime();
+    def getSpecCentPlot(self):
+        specCentAllTime= self.getSpecCentAllTime();
 
         fig, ax= self.createNullPlot();
 
         times = librosa.times_like(
-            tamPhoAllTime, 
+            specCentAllTime, 
             sr= self.sr, 
             hop_length= self.config.hop_length
         )
 
-        #semilogy = trục Oy là hàm log= semi-log-y
+        #semilogy = trục Oy là hàm log = semi-log-y
         ax.semilogy(
             times,
-            tamPhoAllTime[0],
-            label= 'tâm phổ',
+            specCentAllTime[0],
+            label= 'spectral centroid'
         )
 
         ax.set_ylabel("Hz")
         ax.set_xlabel("Time")
         ax.legend(); #là cái ô chú thích "đường màu xanh là tâm phổ"
-        ax.set_title("Tâm phổ")
+        ax.set_title("spectral centroid")
 
         return fig;
     #
@@ -221,8 +230,105 @@ class AudioInfo :
 
     #🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥
 
-    def getMfccAllTime(self):
-        return 
+    def getListMfccAllTime(self):
+        return librosa.feature.mfcc(
+            y= self.y,
+            sr= self.sr,
+            n_mfcc = self.config.n_mfcc
+        );
+    #
+
+    def setListMfcc(self):
+        listMfccAllTime = self.getListMfccAllTime()
+
+        self.listMfccMean = np.mean(listMfccAllTime, axis=1)
+    #
+
+    def getListMfccPlot(self):
+        listMfccAllTime = self.getListMfccAllTime()
+
+        fig, ax = self.createNullPlot()
+
+        librosa.display.specshow(
+            listMfccAllTime,
+            sr= self.sr,
+            x_axis= 'time',
+            ax= ax
+        )
+
+        fig.colorbar(format= "%+2.0f dB")
+
+        ax.set_title("mfcc")
+
+        return fig;
+    #
+
+    #🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥
+
+    #🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩
+
+    def getListChromaAllTime(self):
+        return librosa.feature.chroma_stft(
+            y= self.y,
+            sr= self.sr,
+            n_chroma= self.config.n_chroma
+        );
+    #
+
+    def setListChroma(self):
+        listChromaAllTime = self.getListChromaAllTime();
+        self.listChromaMean = np.mean(listChromaAllTime, axis=1);
+    #
+
+    def getListChromaPlot(self):
+        listChromaAllTime = self.getListChromaAllTime()
+
+        fig, ax = self.createNullPlot()
+
+        librosa.display.specshow(
+            listChromaAllTime,
+            sr= self.sr,
+            x_axis= "time",
+            y_axis= "chroma",
+            ax= ax
+        )
+
+        fig.colorbar()
+
+        ax.set_title("chromagram")
+
+        return fig;
+    #
+    #🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩
+
+    #🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥
+
+    def getVectorFeature(self):
+        vectorFeature = {}
+
+        vectorFeature['zcrMean']= self.zcrMean
+
+        vectorFeature['specCenMean']= self.specCentMean
+
+        vectorFeature['specRolloffMean']= self.specRolloffMean
+
+        # mfcc[0] -> mfcc[12]
+        # https://www.geeksforgeeks.org/enumerate-in-python/
+        for i, mfccMean in enumerate(self.listMfccMean):
+            tenMfcc = f"mfcc_{i}_Mean"
+            vectorFeature[tenMfcc] = mfccMean
+        #
+
+        # chroma[0] -> chroma[11]
+        for i, chromaMean in enumerate(self.listChromaMean):
+            tenChroma = f"chroma_{i}_Mean"
+            vectorFeature[tenChroma] = chromaMean
+        #
+
+        df1 = pd.DataFrame([vectorFeature])
+
+        return df1;
+    #
 
     #🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥
 #
