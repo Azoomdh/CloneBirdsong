@@ -19,33 +19,84 @@ class ConfigAudio :
 #
 
 class AudioInfo :
-    def __init__(self, duongDan):
-        self.duongDan= duongDan;
+
+    # Khi bạn cài đặt một hàm khởi tạo (constructor) với tham số soluong=None, bạn có thể không liệt kê tham số này khi gọi hàm khởi tạo. Điều này là bởi vì tham số soluong đã có giá trị mặc định là None. Nếu bạn không cung cấp giá trị cho tham số này, giá trị mặc định sẽ được sử dụng.
+
+
+    def setYSr(self, duongDan):
         self.y , self.sr = librosa.load(self.duongDan);
+    #
 
-        self.config = ConfigAudio(
-            chieuRongPlot= 14, 
-            chieuCaoPlot= 5, 
-            hop_length=512, 
-            frame_length= 2048,
-            n_mfcc= 13,
-            n_chroma= 12
-        )
-        
-        self.zcrMean= None; 
-        self.setZcr();
-        
-        self.specCentMean = None; 
-        self.setSpecCent();
-    
-        self.specRolloffMean = None;
-        self.setSpecRolloff();
-    
-        self.listMfccMean = []
-        self.setListMfcc()
+    def __init__(self, duongDan, dfFvRow :pd.DataFrame = None):
+        if dfFvRow is None :
+            self.duongDan= duongDan;
+            self.y , self.sr = None , None
+            self.setYSr(self.duongDan)
 
-        self.listChromaMean = []
-        self.setListChroma()
+            self.config = ConfigAudio(
+                chieuRongPlot= 14, 
+                chieuCaoPlot= 5, 
+                hop_length=512, 
+                frame_length= 2048,
+                n_mfcc= 13,
+                n_chroma= 12
+            )
+            
+            self.zcrMean= None; 
+            self.setZcr();
+            
+            self.specCentMean = None; 
+            self.setSpecCent();
+        
+            self.specRolloffMean = None;
+            self.setSpecRolloff();
+        
+            self.listMfccMean = []
+            self.setListMfcc()
+
+            self.listChromaMean = []
+            self.setListChroma()
+        #
+
+        else :
+            self.duongDan= dfFvRow['duongDan'];
+
+            self.y , self.sr = None, None
+
+            self.config = ConfigAudio(
+                chieuRongPlot= 14, 
+                chieuCaoPlot= 5, 
+                hop_length=512, 
+                frame_length= 2048,
+                n_mfcc= 13,
+                n_chroma= 12
+            )
+            
+            self.zcrMean= dfFvRow['zcrMean']; 
+            
+            self.specCentMean = dfFvRow['specCenMean']; 
+        
+            self.specRolloffMean = dfFvRow['specRolloffMean'];
+
+            # mfcc[0] -> mfcc[12]
+            self.listMfccMean = []
+            for i in range(0, 13):
+                self.listMfccMean.append(None)
+            #
+            for i in range(0, 13):
+                tenMfcc = f"mfcc_{i}_Mean"
+                self.listMfccMean[i] = dfFvRow[tenMfcc]
+            #
+
+            # chroma[0] -> chroma[11]
+            self.listChromaMean = []
+            for i in range(0, 12):
+                self.listChromaMean.append(None)
+            #
+            for i in range(0, 12):
+                tenChroma = f"chroma_{i}_Mean"
+                self.listChromaMean[i]= dfFvRow[tenChroma]
+            #
     #
 
     def createNullPlot(self):
@@ -305,6 +356,8 @@ class AudioInfo :
 
     def getVectorFeature(self):
         vectorFeature = {}
+
+        vectorFeature['duongDan']= self.duongDan
 
         vectorFeature['zcrMean']= self.zcrMean
 
