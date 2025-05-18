@@ -32,7 +32,7 @@ def createAllAudio(duongDanThuMuc : str, duongDanFileCsv : str) :
         for file in files :
             filepath = subdir + os.sep + file
 
-            if filepath.endswith(".flac")== True :
+            if filepath.endswith(".wav")== True :
                 saveFeatureAudioToCsv(duongDanFileNhac= filepath, duongDanFileCsv= duongDanFileCsv)
             #
 
